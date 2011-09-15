@@ -1,54 +1,76 @@
 #!/bin/sh
 
 qemuopts="-hda obj/kern/kernel.img"
+qemuphys=1
 . ./grade-functions.sh
 
 
 $make
+run
 
-check () {
-	pts=20
+score=0
+
 	echo_n "Printf: "
 	if grep "6828 decimal is 15254 octal!" jos.out >/dev/null
 	then
-		pass
+		score=`expr 20 + $score`
+		echo OK $time
 	else
-		fail
+		echo WRONG $time
 	fi
+    
+    if grep "error! writing through NULL pointer! (%n argument)" jos.out >/dev/null && grep "warning! The value %n argument pointed to has been overflowed!" jos.out > /dev/null && grep "chnum1: 28 chnum2: 29" jos.out > /dev/null && grep "chnum1: -1" jos.out > /dev/null
+    then 
+        score=`expr 10 + $score`
+        echo OK $time
+    else
+        echo WRONG $time
+    fi
 
-	pts=10
-	echo "Backtrace:"
+	echo_n "Backtrace: "
 	args=`grep "ebp f01.* eip f0100.* args" jos.out | awk '{ print $6 }'`
 	cnt=`echo $args | grep '^00000000 00000000 00000001 00000002 00000003 00000004 00000005' | wc -w`
-	echo_n "   Count "
 	if [ $cnt -eq 8 ]
 	then
-		pass
+		score=`expr 10 + $score`
+		echo_n "Count OK"
 	else
-		fail
+		echo_n "Count WRONG"
 	fi
 
 	cnt=`grep "ebp f01.* eip f0100.* args" jos.out | awk 'BEGIN { FS = ORS = " " }
 { print $6 }
 END { printf("\n") }' | grep '^00000000 00000000 00000001 00000002 00000003 00000004 00000005' | wc -w`
-	echo_n "   Args "
 	if [ $cnt -eq 8 ]; then
-		pass
+		score=`expr 10 + $score`
+		echo_n ', Args OK'
 	else
-		fail "($args)"
+		echo_n ', Args WRONG (' $args ')'
 	fi
 
-	syms=`grep "kern/init.c:[0-9]*:  *test_backtrace[+]" jos.out`
-	symcnt=`grep "kern/init.c:[0-9]*:  *test_backtrace[+]" jos.out | wc -l`
-	echo_n "   Symbols "
+	syms=`grep "kern/init.c:.* test_backtrace" jos.out`
+	symcnt=`grep "kern/init.c:.* test_backtrace" jos.out | wc -l`
 	if [ $symcnt -eq 6 ]; then
-		pass
+		score=`expr 10 + $score`
+		echo , Symbols OK $time
 	else
-		fail "($syms)"
+		echo , Symbols WRONG "($syms)" $time
 	fi
-}
 
-run
-check
+        if grep "Overflow success" jos.out >/dev/null
+        then
+                if grep "Backtrace success" jos.out >/dev/null
+                then
+                        score=`expr 10 + $score`
+                        echo OK $time
+                fi
+        else
+                echo WRONG $time
+        fi
 
-showfinal
+
+echo "Score: $score/70"
+
+if [ $score -lt 60 ]; then
+    exit 1
+fi
