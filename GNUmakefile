@@ -167,8 +167,11 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh
 
 handin: tarball
+	@echo
+	@echo Rename the  lab$(LAB)-handin.tar.gz to {your student id}.tar.gz.
+	@echo
 	@echo Please visit ftp://10.132.141.33/classes/09/
-	@echo and upload lab$(LAB)-handin.tar.gz to the course upload directory.  Thanks!
+	@echo and upload the {your student id}.tar.gz file to the course upload directory.  Thanks!
 
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
