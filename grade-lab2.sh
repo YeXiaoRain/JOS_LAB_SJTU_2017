@@ -25,6 +25,15 @@ check () {
 		fail
 	fi
 
+	pts=10 
+	echo_n "Allocate continuous pages: "
+	if grep "check_four_pages() succeeded!" jos.out >/dev/null
+	then
+		pass
+	else
+		fail
+	fi
+
 	pts=20
 	echo_n "Kernel page directory: "
 	if grep "check_kern_pgdir() succeeded!" jos.out >/dev/null
