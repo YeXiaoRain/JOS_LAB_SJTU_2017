@@ -115,6 +115,11 @@ runtest1 evilhello \
 	'.00001000. user_mem_check assertion failure for va f0100...' \
 	'.00001000. free env 00001000'
 
+runtest1 evilhello2 \
+	'IN RING0!!!' \
+	'Incoming TRAP frame at 0xefbfffbc' \
+	'TRAP frame at 0xf.......' 
+
 showpart B
 
 showfinal

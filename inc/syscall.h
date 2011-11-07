@@ -7,6 +7,7 @@ enum {
 	SYS_cgetc,
 	SYS_getenvid,
 	SYS_env_destroy,
+	SYS_map_kernel_page,
 	NSYSCALLS
 };
 

@@ -49,6 +49,15 @@
 
 
 
+.globl sysenter_handler;
+.type sysenter_handler, @function;
+.align 2;
+sysenter_handler:
+/*
+ * Lab 3: Your code here for system call handling
+ */
+
+
 /*
  * Lab 3: Your code here for _alltraps
  */
