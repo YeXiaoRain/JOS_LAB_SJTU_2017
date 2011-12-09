@@ -20,8 +20,10 @@ timeout=30
 preservefs=n
 qemu=`$make -s --no-print-directory print-qemu`
 gdbport=`$make -s --no-print-directory print-gdbport`
+
 # qemugdb=`$make -s --no-print-directory print-qemugdb`
 qemugdb='-s -p 26000'
+
 brkfn=readline
 
 echo_n () {
@@ -36,7 +38,7 @@ echo_n () {
 run () {
 	qemuextra=
 	if [ "$brkfn" ]; then
-		qemuextra="-S $qemugdb"
+		qemuextra="-S -gdb tcp::$gdbport"
 	fi
 
 	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
