@@ -818,6 +818,10 @@ check_continuous(struct Page *pp, int num_page)
 	int i;
 	for( tmp = pp, i = 0; i < num_page; tmp = tmp->pp_link, i++ )
 	{
+		if(tmp == NULL) 
+		{
+			return 0;
+		}
 		if( (page2pa(tmp->pp_link) - page2pa(tmp)) != PGSIZE )
 		{
 			return 0;
@@ -841,6 +845,7 @@ check_n_pages(void)
 	assert(pp0 != 0);
 	assert(pp != pp0);
 
+	
 	// Free pp and assign four continuous pages
 	page_free(pp);
 	pp = page_alloc_npages(0, 4);
@@ -848,6 +853,15 @@ check_n_pages(void)
 
 	// Free four continuous pages
 	assert(!page_free_npages(pp, 4));
+
+	// Free pp and assign eight continuous pages
+	page_free(pp);
+	pp = page_alloc_npages(0, 8);
+	assert(check_continuous(pp, 8));
+
+	// Free four continuous pages
+	assert(!page_free_npages(pp, 8));
+
 
 	// Free pp0 and assign four continuous zero pages
 	page_free(pp0);
