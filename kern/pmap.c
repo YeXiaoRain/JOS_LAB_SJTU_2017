@@ -64,8 +64,8 @@ static void check_page_alloc(void);
 static void check_kern_pgdir(void);
 static physaddr_t check_va2pa(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
-static int check_continuous(struct Page *pp);
-static void check_four_pages(void);
+static int check_continuous(struct Page *pp, num_page);
+static void check_n_pages(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 
@@ -159,7 +159,7 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
-	check_four_pages();
+	check_n_pages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -275,31 +275,32 @@ page_alloc(int alloc_flags)
 }
 
 //
-// Allocates 4 continuous physical page. If (alloc_flags & ALLOC_ZERO), fills the 4 pages 
+// Allocates n continuous physical page. If (alloc_flags & ALLOC_ZERO), fills the n pages 
 // returned physical page with '\0' bytes.  Does NOT increment the reference
 // count of the page - the caller must do these if necessary (either explicitly
 // or via page_insert). 
 //
-// In order to figure out the four pages when return it. 
-// These 4 pages should be organized as a list.
+// In order to figure out the n pages when return it. 
+// These n pages should be organized as a list.
 //
 // Returns NULL if out of free memory.
+// Returns NULL if n <= 0
 //
 // Hint: use page2kva and memset
 struct Page *
-page_alloc_4pages(int alloc_flags)
+page_alloc_npages(int alloc_flags, int n)
 {
 	// Fill this function
 	return NULL;
 }
 
-// Return 4 continuous pages to chunck list. Do the following things:
-//	1. Check whether the four pages int the list are continue, Return -1 on Error
+// Return n continuous pages to chunck list. Do the following things:
+//	1. Check whether the n pages int the list are continue, Return -1 on Error
 //	2. Add the pages to the chunck list.
 //	
 //	Return 0 if everything ok
 int
-page_free_4pages(struct Page *pp)
+page_free_npages(struct Page *pp, int n)
 {
 	// Fill this function
 	return -1;
@@ -811,11 +812,11 @@ check_page(void)
 }
 
 static int
-check_continuous(struct Page *pp)
+check_continuous(struct Page *pp, int num_page)
 {
 	struct Page *tmp; 
 	int i;
-	for( tmp = pp, i = 0; i < 3; tmp = tmp->pp_link, i++ )
+	for( tmp = pp, i = 0; i < num_page; tmp = tmp->pp_link, i++ )
 	{
 		if( (page2pa(tmp->pp_link) - page2pa(tmp)) != PGSIZE )
 		{
@@ -826,7 +827,7 @@ check_continuous(struct Page *pp)
 }
 
 static void
-check_four_pages(void)
+check_n_pages(void)
 {
 	struct Page* pp, *pp0;
 	char* addr;
@@ -842,15 +843,15 @@ check_four_pages(void)
 
 	// Free pp and assign four continuous pages
 	page_free(pp);
-	pp = page_alloc_4pages(0);
-	assert(check_continuous(pp));
+	pp = page_alloc_npages(0, 4);
+	assert(check_continuous(pp, 4));
 
 	// Free four continuous pages
-	assert(!page_free_4pages(pp));
+	assert(!page_free_npages(pp, 4));
 
 	// Free pp0 and assign four continuous zero pages
 	page_free(pp0);
-	pp0 = page_alloc_4pages(ALLOC_ZERO);
+	pp0 = page_alloc_4pages(ALLOC_ZERO, 4);
 	addr = (char*)page2kva(pp0);
 	
 	// Check Zero
@@ -859,8 +860,8 @@ check_four_pages(void)
 	}
 
 	// Free pages
-	assert(!page_free_4pages(pp0));
-	cprintf("check_four_pages() succeeded!\n");
+	assert(!page_free_npages(pp0, 4));
+	cprintf("check_n_pages() succeeded!\n");
 }
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir

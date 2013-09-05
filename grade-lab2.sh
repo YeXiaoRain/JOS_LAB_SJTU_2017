@@ -27,7 +27,7 @@ check () {
 
 	pts=10 
 	echo_n "Allocate continuous pages: "
-	if grep "check_four_pages() succeeded!" jos.out >/dev/null
+	if grep "check_n_pages() succeeded!" jos.out >/dev/null
 	then
 		pass
 	else
