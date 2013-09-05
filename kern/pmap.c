@@ -855,7 +855,6 @@ check_n_pages(void)
 	assert(!page_free_npages(pp, 4));
 
 	// Free pp and assign eight continuous pages
-	page_free(pp);
 	pp = page_alloc_npages(0, 8);
 	assert(check_continuous(pp, 8));
 
