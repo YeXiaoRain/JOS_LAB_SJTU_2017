@@ -64,7 +64,7 @@ static void check_page_alloc(void);
 static void check_kern_pgdir(void);
 static physaddr_t check_va2pa(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
-static int check_continuous(struct Page *pp, num_page);
+static int check_continuous(struct Page *pp, int num_page);
 static void check_n_pages(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
@@ -865,7 +865,7 @@ check_n_pages(void)
 
 	// Free pp0 and assign four continuous zero pages
 	page_free(pp0);
-	pp0 = page_alloc_4pages(ALLOC_ZERO, 4);
+	pp0 = page_alloc_npages(ALLOC_ZERO, 4);
 	addr = (char*)page2kva(pp0);
 	
 	// Check Zero
