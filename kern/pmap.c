@@ -816,7 +816,7 @@ check_continuous(struct Page *pp, int num_page)
 {
 	struct Page *tmp; 
 	int i;
-	for( tmp = pp, i = 0; i < num_page; tmp = tmp->pp_link, i++ )
+	for( tmp = pp, i = 0; i < num_page - 1; tmp = tmp->pp_link, i++ )
 	{
 		if(tmp == NULL) 
 		{
