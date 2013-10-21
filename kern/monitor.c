@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/trap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -56,56 +57,10 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
-// Lab1 only
-// read the pointer to the retaddr on the stack
-static uint32_t
-read_pretaddr() {
-    uint32_t pretaddr;
-    __asm __volatile("leal 4(%%ebp), %0" : "=r" (pretaddr)); 
-    return pretaddr;
-}
-
-void
-do_overflow(void)
-{
-    cprintf("Overflow success\n");
-}
-
-void
-start_overflow(void)
-{
-	// You should use a techique similar to buffer overflow
-	// to invoke the do_overflow function and
-	// the procedure must return normally.
-
-    // And you must use the "cprintf" function with %n specifier
-    // you augmented in the "Exercise 9" to do this job.
-
-    // hint: You can use the read_pretaddr function to retrieve 
-    //       the pointer to the function call return address;
-
-    char str[256] = {};
-    int nstr = 0;
-    char *pret_addr;
-
-	// Your code here.
-    
-
-
-}
-
-void
-overflow_me(void)
-{
-        start_overflow();
-}
-
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
-    overflow_me();
-    cprintf("Backtrace success\n");
 	return 0;
 }
 
@@ -163,6 +118,8 @@ monitor(struct Trapframe *tf)
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
+	if (tf != NULL)
+		print_trapframe(tf);
 
 	while (1) {
 		buf = readline("K> ");
