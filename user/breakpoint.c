@@ -11,9 +11,7 @@ umain(int argc, char **argv)
 	cprintf("&a equals 0x%x\n",&a);
 	asm volatile("int $3");
 	// Try single-step here
-	//         a=20;
-	//                 cprintf("Finally , a equals %d\n",a);
-	//
-	asm volatile("int $3");
+	a=20;
+	cprintf("Finally , a equals %d\n",a);
 }
 
