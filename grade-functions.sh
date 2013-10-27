@@ -20,8 +20,7 @@ timeout=30
 preservefs=n
 qemu=`$make -s --no-print-directory print-qemu`
 gdbport=`$make -s --no-print-directory print-gdbport`
-# qemugdb=`$make -s --no-print-directory print-qemugdb`
-qemugdb='-s -p 26000'
+qemugdb=`$make -s --no-print-directory print-qemugdb`
 brkfn=readline
 
 echo_n () {
