@@ -181,8 +181,7 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh
 
 handin: tarball
-	@echo Please visit http://pdos.csail.mit.edu/6.828/submit/
-	@echo and upload lab$(LAB)-handin.tar.gz.  Thanks!
+	@echo Please upload lab$(LAB)-handin.tar.gz to sky1young@public.sjtu.edu.cn. Thanks!
 
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
