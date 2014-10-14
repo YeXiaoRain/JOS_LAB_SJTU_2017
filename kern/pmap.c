@@ -317,6 +317,18 @@ page_free(struct Page *pp)
 }
 
 //
+// Return new_n continuous pages based on the allocated old_n pages.
+// You can man realloc for better understanding.
+// (Try reuse the allocated pages as many as possible.)
+//
+struct Page *
+page_realloc_npages(struct Page *pp, int old_n, int new_n)
+{
+	// Fill this function
+	return -1;
+}
+
+//
 // Decrement the reference count on a page,
 // freeing it if there are no more refs.
 //
