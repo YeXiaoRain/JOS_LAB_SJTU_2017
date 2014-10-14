@@ -319,7 +319,7 @@ page_free(struct Page *pp)
 //
 // Return new_n continuous pages based on the allocated old_n pages.
 // You can man realloc for better understanding.
-// (Try reuse the allocated pages as many as possible.)
+// (Try to reuse the allocated pages as many as possible.)
 //
 struct Page *
 page_realloc_npages(struct Page *pp, int old_n, int new_n)
