@@ -18,7 +18,7 @@ static size_t npages_basemem;	// Amount of base memory (in pages)
 pde_t *kern_pgdir;		// Kernel's initial page directory
 struct Page *pages;		// Physical page state array
 static struct Page *page_free_list;	// Free list of physical pages
-static struct Page chunck_list;
+static struct Page *chunk_list;
 
 
 // --------------------------------------------------------------
@@ -256,6 +256,7 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
+	chunk_list = NULL;
 }
 
 //
@@ -286,6 +287,8 @@ page_alloc(int alloc_flags)
 // Returns NULL if out of free memory.
 // Returns NULL if n <= 0
 //
+// Try to reuse the pages cached in the chuck list
+//
 // Hint: use page2kva and memset
 struct Page *
 page_alloc_npages(int alloc_flags, int n)
@@ -294,9 +297,9 @@ page_alloc_npages(int alloc_flags, int n)
 	return NULL;
 }
 
-// Return n continuous pages to chunck list. Do the following things:
+// Return n continuous pages to chunk list. Do the following things:
 //	1. Check whether the n pages int the list are continue, Return -1 on Error
-//	2. Add the pages to the chunck list.
+//	2. Add the pages to the chunk list
 //	
 //	Return 0 if everything ok
 int
