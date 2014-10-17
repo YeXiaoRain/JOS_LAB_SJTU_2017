@@ -328,7 +328,7 @@ struct Page *
 page_realloc_npages(struct Page *pp, int old_n, int new_n)
 {
 	// Fill this function
-	return -1;
+	return NULL;
 }
 
 //
