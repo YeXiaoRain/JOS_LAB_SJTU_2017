@@ -80,13 +80,6 @@ runtest1 faultwritekernel \
 
 runtest2 breakpoint
 
-runtest1 sbrktest \
-	'.00000000. new env 00001000' \
-	'SBRK_TEST\(ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKL\)' \
-	'.00001000. exiting gracefully' \
-	'.00001000. free env 00001000' \
-	'Destroyed the only environment - nothing more to do!'
-
 # runtest1 breakpoint \
 # 	'Welcome to the JOS kernel monitor!' \
 # 	'Incoming TRAP frame at 0xefbfffbc' \
@@ -106,6 +99,13 @@ runtest1 hello \
 	'.00000000. new env 00001000' \
 	'hello, world' \
 	'i am environment 00001000' \
+	'.00001000. exiting gracefully' \
+	'.00001000. free env 00001000' \
+	'Destroyed the only environment - nothing more to do!'
+
+runtest1 sbrktest \
+	'.00000000. new env 00001000' \
+	'SBRK_TEST\(ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKL\)' \
 	'.00001000. exiting gracefully' \
 	'.00001000. free env 00001000' \
 	'Destroyed the only environment - nothing more to do!'
