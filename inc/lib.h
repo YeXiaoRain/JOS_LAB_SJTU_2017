@@ -41,6 +41,8 @@ envid_t	sys_getenvid(void);
 int	sys_env_destroy(envid_t);
 int     sys_map_kernel_page(void* kpage, void* va);
 
+int sys_sbrk(uint32_t inc);
+
 
 
 /* File open modes */

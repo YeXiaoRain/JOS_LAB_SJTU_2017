@@ -70,3 +70,9 @@ sys_map_kernel_page(void* kpage, void* va)
 	 return syscall(SYS_map_kernel_page, 0, (uint32_t)kpage, (uint32_t)va, 0, 0, 0);
 }
 
+int
+sys_sbrk(uint32_t inc)
+{
+	 return syscall(SYS_sbrk, 0, (uint32_t)inc, (uint32_t)0, 0, 0, 0);
+}
+

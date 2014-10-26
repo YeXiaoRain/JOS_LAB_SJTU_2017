@@ -52,6 +52,8 @@ struct Env {
 	unsigned env_status;		// Status of the environment
 	uint32_t env_runs;		// Number of times environment has run
 
+	// LAB3: might need code here for implementation of sbrk
+
 	// Address space
 	pde_t *env_pgdir;		// Kernel virtual address of page dir
 };
