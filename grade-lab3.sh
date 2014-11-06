@@ -78,15 +78,14 @@ runtest1 faultwritekernel \
 	'  err  0x00000007.*' \
 	'.00001000. free env 00001000'
 
-
-runtest1 breakpoint \
-	'Welcome to the JOS kernel monitor!' \
-	'Incoming TRAP frame at 0xefbfffbc' \
-	'TRAP frame at 0xf.......' \
-	'  trap 0x00000003 Breakpoint' \
-	'  eip  0x008.....' \
-	'  ss   0x----0023' \
-	! '.00001000. free env 00001000'
+# runtest1 breakpoint \
+# 	'Welcome to the JOS kernel monitor!' \
+# 	'Incoming TRAP frame at 0xefbfffbc' \
+# 	'TRAP frame at 0xf.......' \
+# 	'  trap 0x00000003 Breakpoint' \
+# 	'  eip  0x008.....' \
+# 	'  ss   0x----0023' \
+# 	! '.00001000. free env 00001000'
 
 runtest1 testbss \
 	'Making sure bss works right...' \
@@ -101,6 +100,15 @@ runtest1 hello \
 	'.00001000. exiting gracefully' \
 	'.00001000. free env 00001000' \
 	'Destroyed the only environment - nothing more to do!'
+
+runtest1 sbrktest \
+	'.00000000. new env 00001000' \
+	'SBRK_TEST\(ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKL\)' \
+	'.00001000. exiting gracefully' \
+	'.00001000. free env 00001000' \
+	'Destroyed the only environment - nothing more to do!'
+
+runtest2 breakpoint
 
 runtest1 buggyhello \
 	'.00001000. user_mem_check assertion failure for va 00000001' \

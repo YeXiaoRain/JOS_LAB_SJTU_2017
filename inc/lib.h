@@ -80,6 +80,9 @@ envid_t	ipc_find_env(enum EnvType type);
 envid_t	fork(void);
 envid_t	sfork(void);	// Challenge!
 
+int     sys_map_kernel_page(void* kpage, void* va);
+
+int sys_sbrk(uint32_t inc);
 
 
 

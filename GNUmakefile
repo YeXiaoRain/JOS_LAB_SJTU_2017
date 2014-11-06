@@ -188,8 +188,7 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh $(GRADEFLAGS)
 
 handin: tarball
-	@echo Please visit http://pdos.csail.mit.edu/6.828/submit/
-	@echo and upload lab$(LAB)-handin.tar.gz.  Thanks!
+	@echo Please upload lab$(LAB)-handin.tar.gz to sky1young@public.sjtu.edu.cn. Thanks!
 
 tarball:
 	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
@@ -214,6 +213,24 @@ tarball:
 prep-%:
 	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
 	$(V)$(MAKE) "DEFS=-DTEST=`case $* in *_*) echo $*;; *) echo user_$*;; esac`" $(IMAGES)
+	$(V)rm -f $(OBJDIR)/kern/init.o
+
+run-%-nox-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) -nographic $(QEMUOPTS) -S
+
+run-%-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) $(QEMUOPTS) -S
+
+run-%-nox: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) -nographic $(QEMUOPTS)
+
+# For test runs
+prep-%:
+	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=$$(case $* in *_*) echo $*;; *) echo user_$*;; esac)" $(IMAGES)
 	$(V)rm -f $(OBJDIR)/kern/init.o
 
 run-%-nox-gdb: .gdbinit

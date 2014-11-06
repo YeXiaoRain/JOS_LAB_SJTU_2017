@@ -56,7 +56,8 @@ KERN_BINFILES :=	user/hello \
 			user/faultread \
 			user/faultreadkernel \
 			user/faultwrite \
-			user/faultwritekernel
+			user/faultwritekernel \
+			user/sbrktest
 
 # Binary files for LAB4
 KERN_BINFILES +=	user/idle \
