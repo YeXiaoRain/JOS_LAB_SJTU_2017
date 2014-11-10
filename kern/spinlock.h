@@ -3,12 +3,23 @@
 
 #include <inc/types.h>
 
+// After you implemented ticket_spinlock,
+// define USE_TICKET_SPIN_LOCK.
+// LAB 4: Your code here.
+
+//#define USE_TICKET_SPIN_LOCK
+
 // Comment this to disable spinlock debugging
 #define DEBUG_SPINLOCK
 
 // Mutual exclusion lock.
 struct spinlock {
+#ifndef USE_TICKET_SPIN_LOCK
 	unsigned locked;   // Is the lock held?
+#else
+	unsigned own;
+	unsigned next;
+#endif
 
 #ifdef DEBUG_SPINLOCK
 	// For debugging:
