@@ -22,7 +22,7 @@ struct spinlock kernel_lock = {
 #ifdef USE_TICKET_SPIN_LOCK
 unsigned atomic_return_and_add(unsigned *addr, unsigned value)
 {
-	__sync_fetch_and_add(addr, value);
+	return __sync_fetch_and_add(addr, value);
 }
 #endif
 
