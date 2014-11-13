@@ -17,6 +17,32 @@
 
 static void boot_aps(void);
 
+static volatile int test_ctr = 0;
+
+void spinlock_test()
+{
+	int i;
+	volatile int interval = 0;
+
+	/* BSP give APs some time to reach this point */
+	if (cpunum() == 0) {
+		while (interval++ < 10000)
+			asm volatile("pause");
+	}
+
+	for (i=0; i<100; i++) {
+		lock_kernel();
+		if (test_ctr % 10000 != 0)
+			panic("ticket spinlock test fail: I saw a middle value\n");
+		interval = 0;
+		while (interval++ < 10000)
+			test_ctr++;
+		unlock_kernel();
+	}
+	lock_kernel();
+	cprintf("spinlock_test() succeeded on CPU %d!\n", cpunum());
+	unlock_kernel();
+}
 
 void
 i386_init(void)
@@ -53,6 +79,12 @@ i386_init(void)
 
 	// Starting non-boot CPUs
 	boot_aps();
+
+#ifdef USE_TICKET_SPIN_LOCK
+	unlock_kernel();
+	spinlock_test();
+	lock_kernel();
+#endif
 
 	// Should always have idle processes at first.
 	int i;
@@ -115,6 +147,10 @@ mp_main(void)
 	env_init_percpu();
 	trap_init_percpu();
 	xchg(&thiscpu->cpu_status, CPU_STARTED); // tell boot_aps() we're up
+
+#ifdef USE_TICKET_SPIN_LOCK
+	spinlock_test();
+#endif
 
 	// Now that we have finished some basic setup, call sched_yield()
 	// to start running processes on this CPU.  But make sure that
