@@ -416,7 +416,7 @@ class Runner():
                 if self.gdb is None:
                     sys.exit(1)
                 self.gdb.kill()
-				Popen("/usr/bin/killall qemu-system-i386", shell=True).wait()
+                Popen("/usr/bin/killall qemu-system-i386", shell=True).wait()
                 self.__react(self.reactors, 5)
                 self.gdb.close()
                 self.qemu.wait()
