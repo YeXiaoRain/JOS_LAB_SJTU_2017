@@ -19,6 +19,14 @@ score=0
 		echo WRONG $time
 	fi
 
+	if grep "show me the sign: +1024, -1024" jos.out >/dev/null
+	then
+		score=`expr 10 + $score`
+		echo OK $time
+	else
+		echo WRONG $time
+	fi
+
 	if grep "pading space in the right to number 22: 22      ." jos.out > /dev/null
 	then
 		score=`expr 10 + $score`
@@ -77,7 +85,7 @@ END { printf("\n") }' | grep '^00000000 00000000 00000001 00000002 00000003 0000
         fi
 
 
-echo "Score: $score/80"
+echo "Score: $score/90"
 
 if [ $score -lt 60 ]; then
     exit 1
