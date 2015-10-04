@@ -36,6 +36,12 @@ static void
 printnum(void (*putch)(int, void*), void *putdat,
 	 unsigned long long num, unsigned base, int width, int padc)
 {
+	// if cprintf'parameter includes pattern of the form "%-", padding
+	// space on the right side if neccesary.
+	// you can add helper function if needed.
+	// your code here:
+
+
 	// first recursively print all preceding (more significant) digits
 	if (num >= base) {
 		printnum(putch, putdat, num / base, base, width - 1, padc);
@@ -206,6 +212,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		// (unsigned) octal
 		case 'o':
 			// Replace this with your code.
+			// display a number in octal form and the form should begin with '0'
 			putch('X', putdat);
 			putch('X', putdat);
 			putch('X', putdat);
