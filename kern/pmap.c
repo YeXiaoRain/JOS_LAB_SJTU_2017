@@ -66,6 +66,7 @@ static physaddr_t check_va2pa(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
 static int check_continuous(struct Page *pp, int num_page);
 static void check_n_pages(void);
+static void check_realloc_npages(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 
@@ -160,6 +161,7 @@ mem_init(void)
 	check_page_alloc();
 	check_page();
 	check_n_pages();
+	check_realloc_npages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -890,6 +892,49 @@ check_n_pages(void)
 	// Free pages
 	assert(!page_free_npages(pp0, 4));
 	cprintf("check_n_pages() succeeded!\n");
+}
+
+static void
+check_realloc_npages(void)
+{
+	struct Page* pp, *pp0;
+	char* addr;
+	int i;
+	pp = pp0 = 0;
+
+	// Allocate two single pages
+	pp =  page_alloc(0);
+	pp0 = page_alloc(0);
+	assert(pp != 0);
+	assert(pp0 != 0);
+	assert(pp != pp0);
+
+	// Free pp and pp0
+	page_free(pp);
+	page_free(pp0);
+
+	// Assign eight continuous pages
+	pp = page_alloc_npages(0, 8);
+	assert(check_continuous(pp, 8));
+
+	// Realloc to 4 pages
+	pp0 = page_realloc_npages(pp, 8, 4);
+	assert(pp0 == pp);
+	assert(check_continuous(pp, 4));
+
+	// Realloc to 6 pages
+	pp0 = page_realloc_npages(pp, 4, 6);
+	assert(pp0 == pp);
+	assert(check_continuous(pp, 6));
+
+	// Realloc to 12 pages
+	pp0 = page_realloc_npages(pp, 6, 12);
+	assert(check_continuous(pp0, 12));
+
+	// Free 12 continuous pages
+	assert(!page_free_npages(pp0, 12));
+
+	cprintf("check_realloc_npages() succeeded!\n");
 }
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir
