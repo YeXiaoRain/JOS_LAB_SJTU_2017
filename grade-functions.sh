@@ -20,7 +20,10 @@ timeout=30
 preservefs=n
 qemu=`$make -s --no-print-directory print-qemu`
 gdbport=`$make -s --no-print-directory print-gdbport`
-qemugdb=`$make -s --no-print-directory print-qemugdb`
+
+# qemugdb=`$make -s --no-print-directory print-qemugdb`
+qemugdb='-s -p 26000'
+
 brkfn=readline
 
 echo_n () {
@@ -35,7 +38,12 @@ echo_n () {
 run () {
 	qemuextra=
 	if [ "$brkfn" ]; then
-		qemuextra="-S $qemugdb"
+		qemuextra="-S -gdb tcp::$gdbport"
+	fi
+
+	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
+	if $verbose; then
+		echo $qemucommand 1>&2
 	fi
 
 	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
@@ -135,7 +143,7 @@ fail () {
 # Usage: runtest <tagname> <defs> <check fn> <check args...>
 runtest () {
 	perl -e "print '$1: '"
-	rm -f obj/kern/init.o obj/kern/kernel obj/kern/kernel.img
+	rm -f obj/kern/init.o obj/kern/kernel obj/kern/kernel.img 
 	[ "$preservefs" = y ] || rm -f obj/fs/fs.img
 	if $verbose
 	then
@@ -145,7 +153,7 @@ runtest () {
 	if [ $? -ne 0 ]
 	then
 		rm -f obj/kern/init.o
-		echo $make $2 failed
+		echo $make $2 failed 
 		exit 1
 	fi
 	# We just built a weird init.o that runs a specific test.  As
