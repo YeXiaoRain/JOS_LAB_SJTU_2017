@@ -168,9 +168,7 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 
 handin: tarball
 	@echo
-	@echo "Please use the following command to upload your lab:"
-	@echo
-	@echo "ftp -u ftp://osdi13:osdi13ipads@ipads.se.sjtu.edu.cn/lab$(LAB)/<student id>.tar.gz lab$(LAB)-handin.tar.gz"
+	@echo "Please upload your tar file to ftp(in os's lab1 webpage)"
 	@echo
 	@echo "For example, if your student id is 123456, then replace <student id>.tar.gz to 123456.tar.gz"
 
