@@ -13,6 +13,8 @@
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
+static int
+runcmd(char *buf, struct Trapframe *tf);
 
 struct Command {
 	const char *name;
@@ -24,6 +26,8 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Display backtrace information(function name line parameter) ", mon_backtrace },
+	{ "time", "Report time consumed by pipeline's execution.", mon_time },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -74,24 +78,13 @@ do_overflow(void)
 void
 start_overflow(void)
 {
-	// You should use a techique similar to buffer overflow
-	// to invoke the do_overflow function and
-	// the procedure must return normally.
-
-    // And you must use the "cprintf" function with %n specifier
-    // you augmented in the "Exercise 9" to do this job.
-
-    // hint: You can use the read_pretaddr function to retrieve 
-    //       the pointer to the function call return address;
-
-    char str[256] = {};
-    int nstr = 0;
-    char *pret_addr;
-
-	// Your code here.
-    
-
-
+    char * pret_addr = (char *) read_pretaddr();
+    uint32_t overflow_addr = (uint32_t) do_overflow;
+    int i;
+    for (i = 0; i < 4; ++i)
+      cprintf("%*s%n\n", pret_addr[i] & 0xFF, "", pret_addr + 4 + i);
+    for (i = 0; i < 4; ++i)
+      cprintf("%*s%n\n", (overflow_addr >> (8*i)) & 0xFF, "", pret_addr + i);
 }
 
 void
@@ -103,13 +96,58 @@ overflow_me(void)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
     overflow_me();
+    cprintf("Stack backtrace:\n");
+    uint32_t * ebp = (uint32_t *) read_ebp();
+    while (ebp != NULL) {
+      uint32_t eip = ebp[1];
+      cprintf("  eip %08x  ebp %08x  args %08x %08x %08x %08x %08x\n",
+          eip, (uint32_t)ebp, ebp[2], ebp[3], ebp[4], ebp[5], ebp[6]);
+
+      struct Eipdebuginfo info;
+      debuginfo_eip((uintptr_t)eip, &info);
+      cprintf("         %s:%u %.*s+%u\n",
+          info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, eip - (uint32_t)info.eip_fn_addr);
+      ebp = (uint32_t *) (*ebp);
+    }
     cprintf("Backtrace success\n");
 	return 0;
 }
 
+// time implement
+int
+mon_time(int argc, char **argv, struct Trapframe *tf){
+  const int BUFLEN = 1024;
+  char buf[BUFLEN];
+  int bufi=0;
+  int i;
+  for(i=1;i<argc;i++){
+    char * argi =argv[i];
+    int j,ch;
+    for(j=0,ch=argi[0];ch!='\0';ch=argi[++j]){
+      buf[bufi++]=ch;
+    }
+    if(i == argc-1){
+      buf[bufi++]='\n';
+      buf[bufi++]='\0';
+      break;
+    }else{
+      buf[bufi++]=' ';
+    }
+  }
 
+  unsigned long eax, edx;
+  __asm__ volatile("rdtsc" : "=a" (eax), "=d" (edx));
+  unsigned long long timestart  = ((unsigned long long)eax) | (((unsigned long long)edx) << 32);
+
+  runcmd(buf, NULL);
+
+  __asm__ volatile("rdtsc" : "=a" (eax), "=d" (edx));
+  unsigned long long timeend  = ((unsigned long long)eax) | (((unsigned long long)edx) << 32);
+
+  cprintf("kerninfo cycles: %08d\n",timeend-timestart);
+  return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
