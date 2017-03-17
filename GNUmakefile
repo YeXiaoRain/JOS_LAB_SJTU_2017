@@ -181,7 +181,10 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh
 
 handin: tarball
-	@echo Please upload lab$(LAB)-handin.tar.gz to dmkaplony@public.sjtu.edu.cn. Thanks!
+	@echo
+	@echo "Please upload your tar file to ftp(in os's lab2 webpage)"
+	@echo
+	@echo "For example, if your student id is 123456, then replace <student id>.tar.gz to 123456.tar.gz"
 
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
