@@ -25,9 +25,9 @@ check () {
 		fail
 	fi
 
-	pts=10 
-	echo_n "Allocate continuous pages: "
-	if grep "check_n_pages() succeeded!" jos.out >/dev/null
+	pts=20
+	echo_n "Kernel page directory: "
+	if grep "check_kern_pgdir() succeeded!" jos.out >/dev/null
 	then
 		pass
 	else
@@ -35,17 +35,8 @@ check () {
 	fi
 
 	pts=10
-	echo_n "Reallocate continuous pages: "
-	if grep "check_realloc_npages() succeeded!" jos.out >/dev/null
-	then
-		pass
-	else
-		fail
-	fi
-
-	pts=20
-	echo_n "Kernel page directory: "
-	if grep "check_kern_pgdir() succeeded!" jos.out >/dev/null
+	echo_n "Large kernel page size: "
+	if grep "large page installed!" jos.out >/dev/null
 	then
 		pass
 	else
