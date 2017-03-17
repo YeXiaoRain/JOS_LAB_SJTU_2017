@@ -35,8 +35,8 @@ check () {
 	fi
 
 	pts=10
-	echo_n "Large kernel page size: "
-	if grep "large page installed!" jos.out >/dev/null
+	echo_n "Page management 2: "
+	if grep "check_page_installed_pgdir() succeeded!" jos.out >/dev/null
 	then
 		pass
 	else
@@ -44,8 +44,8 @@ check () {
 	fi
 
 	pts=10
-	echo_n "Page management 2: "
-	if grep "check_page_installed_pgdir() succeeded!" jos.out >/dev/null
+	echo_n "Large kernel page size: "
+	if grep "large page installed!" jos.out >/dev/null
 	then
 		pass
 	else
