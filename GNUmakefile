@@ -186,6 +186,17 @@ handin: tarball
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
 
+# For test runs
+run-%:
+	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=_binary_obj_user_$*_start -DTESTSIZE=_binary_obj_user_$*_size" $(IMAGES)
+	echo "*** Use Ctrl-a x to exit"
+	$(QEMU) -nographic $(QEMUOPTS)
+
+xrun-%:
+	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=_binary_obj_user_$*_start -DTESTSIZE=_binary_obj_user_$*_size" $(IMAGES)
+	$(QEMU) $(QEMUOPTS)
 
 # This magic automatically generates makefile dependencies
 # for header files included from C source files we compile,
