@@ -41,6 +41,28 @@ printnum(void (*putch)(int, void*), void *putdat,
 	// you can add helper function if needed.
 	// your code here:
 
+  if(padc=='-'){ //only for '-'
+    padc = ' ';
+    //careful about overflow and value 0
+    //ensure that the conversion of the number less than the original one of digit in `base` number system
+    unsigned long long reversenum = 0;
+    int numlen = 0;
+    for(; num >= base; ++numlen , num /= base){
+      reversenum *= base ;
+      reversenum += num % base;
+    }
+    // print any needed pad characters after last digit **for overflow**
+    putch("0123456789abcdef"[num],putdat);
+
+    // print left number
+    for( width -= numlen ; numlen > 0 ; --numlen, reversenum /= base){
+      putch("0123456789abcdef"[reversenum % base],putdat);
+    }
+    // print any needed pad characters after last digit
+    while (--width > 0)
+      putch(padc, putdat);
+    return ;
+  }
 
 	// first recursively print all preceding (more significant) digits
 	if (num >= base) {
@@ -91,7 +113,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 	register const char *p;
 	register int ch, err;
 	unsigned long long num;
-	int base, lflag, width, precision, altflag;
+	int base, lflag, width, precision, altflag , precedeflag ;
 	char padc;
 
 	while (1) {
@@ -107,8 +129,14 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		precision = -1;
 		lflag = 0;
 		altflag = 0;
+		precedeflag = 0;
 	reswitch:
 		switch (ch = *(unsigned char *) fmt++) {
+
+		// force to add plus or minus sign
+		case '+':
+			precedeflag = 1;
+			goto reswitch;
 
 		// flag to pad on the right
 		case '-':
@@ -199,6 +227,8 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			if ((long long) num < 0) {
 				putch('-', putdat);
 				num = -(long long) num;
+			}else if(precedeflag && num){
+				putch('+', putdat);
 			}
 			base = 10;
 			goto number;
@@ -211,12 +241,10 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// (unsigned) octal
 		case 'o':
-			// Replace this with your code.
-			// display a number in octal form and the form should begin with '0'
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			num = getuint(&ap, lflag);
+			putch('0', putdat);
+			base = 8;
+			goto number;
 
 		// pointer
 		case 'p':
@@ -255,8 +283,15 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
             const char *null_error = "\nerror! writing through NULL pointer! (%n argument)\n";
             const char *overflow_error = "\nwarning! The value %n argument pointed to has been overflowed!\n";
 
-            // Your code here
-
+            char * posp ; //position pointer
+            if ((posp = va_arg(ap, char *)) == NULL){
+              printfmt(putch,putdat,"%s",null_error);
+            }else if(*((unsigned int *)putdat) > 254 ){// or between ' ' to '~' //change 127 to 254 for overflow part what a fuck
+              printfmt(putch,putdat,"%s",overflow_error);
+              *posp = -1;
+            }else{
+              *posp = *(char *)putdat;
+            }
             break;
         }
 
