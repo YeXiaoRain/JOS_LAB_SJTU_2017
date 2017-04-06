@@ -188,7 +188,8 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh $(GRADEFLAGS)
 
 handin: tarball
-	@echo Please upload lab$(LAB)-handin.tar.gz to sky1young@public.sjtu.edu.cn. Thanks!
+	@echo Please upload lab$(LAB)-xxx.tar.gz to the ftp as before. Thanks!
+	@echo Remeber rename the $(LAB)-handin.tar.gz with your student ID.
 
 tarball:
 	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
