@@ -9,6 +9,7 @@
 
 #include <kern/pmap.h>
 #include <kern/kclock.h>
+#include <kern/env.h>
 
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
@@ -65,6 +66,9 @@ static void check_kern_pgdir(void);
 static physaddr_t check_va2pa(pde_t *pgdir, uintptr_t va);
 static physaddr_t check_va2pa_large(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
+static int check_continuous(struct Page *pp, int num_page);
+static void check_n_pages(void);
+static void check_realloc_npages(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 static void boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
@@ -148,6 +152,11 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
 
+
+	//////////////////////////////////////////////////////////////////////
+	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
+	// LAB 3: Your code here.
+
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -159,6 +168,8 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
+	check_n_pages();
+	check_realloc_npages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -170,6 +181,14 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+
+	//////////////////////////////////////////////////////////////////////
+	// Map the 'envs' array read-only by the user at linear address UENVS
+	// (ie. perm = PTE_U | PTE_P).
+	// Permissions:
+	//    - the new image at UENVS  -- kernel R, user R
+	//    - envs itself -- kernel RW, user NONE
+	// LAB 3: Your code here.
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -271,6 +290,41 @@ struct Page *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
+	return 0;
+}
+
+//
+// Allocates n continuous physical page. If (alloc_flags & ALLOC_ZERO), fills the n pages 
+// returned physical page with '\0' bytes.  Does NOT increment the reference
+// count of the page - the caller must do these if necessary (either explicitly
+// or via page_insert). 
+//
+// In order to figure out the n pages when return it. 
+// These n pages should be organized as a list.
+//
+// Returns NULL if out of free memory.
+// Returns NULL if n <= 0
+//
+// Try to reuse the pages cached in the chuck list
+//
+// Hint: use page2kva and memset
+struct Page *
+page_alloc_npages(int alloc_flags, int n)
+{
+	// Fill this function
+	return NULL;
+}
+
+// Return n continuous pages to chunk list. Do the following things:
+//	1. Check whether the n pages int the list are continue, Return -1 on Error
+//	2. Add the pages to the chunk list
+//	
+//	Return 0 if everything ok
+int
+page_free_npages(struct Page *pp, int n)
+{
+	// Fill this function
+	return -1;
 }
 
 //
@@ -281,6 +335,18 @@ void
 page_free(struct Page *pp)
 {
 	// Fill this function in
+}
+
+//
+// Return new_n continuous pages based on the allocated old_n pages.
+// You can man realloc for better understanding.
+// (Try to reuse the allocated pages as many as possible.)
+//
+struct Page *
+page_realloc_npages(struct Page *pp, int old_n, int new_n)
+{
+	// Fill this function
+	return NULL;
 }
 
 //
@@ -435,6 +501,51 @@ tlb_invalidate(pde_t *pgdir, void *va)
 	// Flush the entry only if we're modifying the current address space.
 	// For now, there is only one address space, so always invalidate.
 	invlpg(va);
+}
+
+static uintptr_t user_mem_check_addr;
+
+//
+// Check that an environment is allowed to access the range of memory
+// [va, va+len) with permissions 'perm | PTE_P'.
+// Normally 'perm' will contain PTE_U at least, but this is not required.
+// 'va' and 'len' need not be page-aligned; you must test every page that
+// contains any of that range.  You will test either 'len/PGSIZE',
+// 'len/PGSIZE + 1', or 'len/PGSIZE + 2' pages.
+//
+// A user program can access a virtual address if (1) the address is below
+// ULIM, and (2) the page table gives it permission.  These are exactly
+// the tests you should implement here.
+//
+// If there is an error, set the 'user_mem_check_addr' variable to the first
+// erroneous virtual address.
+//
+// Returns 0 if the user program can access this range of addresses,
+// and -E_FAULT otherwise.
+//
+int
+user_mem_check(struct Env *env, const void *va, size_t len, int perm)
+{
+	// LAB 3: Your code here.
+
+	return 0;
+}
+
+//
+// Checks that environment 'env' is allowed to access the range
+// of memory [va, va+len) with permissions 'perm | PTE_U | PTE_P'.
+// If it can, then the function simply returns.
+// If it cannot, 'env' is destroyed and, if env is the current
+// environment, this function will not return.
+//
+void
+user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
+{
+	if (user_mem_check(env, va, len, perm | PTE_U) < 0) {
+		cprintf("[%08x] user_mem_check assertion failure for "
+			"va %08x\n", env->env_id, user_mem_check_addr);
+		env_destroy(env);	// may not return
+	}
 }
 
 
@@ -601,6 +712,10 @@ check_kern_pgdir(void)
 	for (i = 0; i < n; i += PGSIZE)
 		assert(check_va2pa(pgdir, UPAGES + i) == PADDR(pages) + i);
 
+	// check envs array (new test for lab 3)
+	n = ROUNDUP(NENV*sizeof(struct Env), PGSIZE);
+	for (i = 0; i < n; i += PGSIZE)
+		assert(check_va2pa(pgdir, UENVS + i) == PADDR(envs) + i);
 
 	// check phys mem
 	if (check_va2pa_large(pgdir, KERNBASE) == 0) {
@@ -613,6 +728,8 @@ check_kern_pgdir(void)
 		    assert(check_va2pa(pgdir, KERNBASE + i) == i);
 	}
 
+
+
 	// check kernel stack
 	for (i = 0; i < KSTKSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
@@ -624,6 +741,7 @@ check_kern_pgdir(void)
 		case PDX(UVPT):
 		case PDX(KSTACKTOP-1):
 		case PDX(UPAGES):
+		case PDX(UENVS):
 			assert(pgdir[i] & PTE_P);
 			break;
 		default:
@@ -810,6 +928,114 @@ check_page(void)
 	cprintf("check_page() succeeded!\n");
 }
 
+static int
+check_continuous(struct Page *pp, int num_page)
+{
+	struct Page *tmp; 
+	int i;
+	for( tmp = pp, i = 0; i < num_page - 1; tmp = tmp->pp_link, i++ )
+	{
+		if(tmp == NULL) 
+		{
+			return 0;
+		}
+		if( (page2pa(tmp->pp_link) - page2pa(tmp)) != PGSIZE )
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static void
+check_n_pages(void)
+{
+	struct Page* pp, *pp0;
+	char* addr;
+	int i;
+	pp = pp0 = 0;
+	
+	// Allocate two single pages
+	pp =  page_alloc(0);
+	pp0 = page_alloc(0);
+	assert(pp != 0);
+	assert(pp0 != 0);
+	assert(pp != pp0);
+
+	
+	// Free pp and assign four continuous pages
+	page_free(pp);
+	pp = page_alloc_npages(0, 4);
+	assert(check_continuous(pp, 4));
+
+	// Free four continuous pages
+	assert(!page_free_npages(pp, 4));
+
+	// Free pp and assign eight continuous pages
+	pp = page_alloc_npages(0, 8);
+	assert(check_continuous(pp, 8));
+
+	// Free four continuous pages
+	assert(!page_free_npages(pp, 8));
+
+
+	// Free pp0 and assign four continuous zero pages
+	page_free(pp0);
+	pp0 = page_alloc_npages(ALLOC_ZERO, 4);
+	addr = (char*)page2kva(pp0);
+	
+	// Check Zero
+	for( i = 0; i < 4 * PGSIZE; i++ ){
+		assert(addr[i] == 0);
+	}
+
+	// Free pages
+	assert(!page_free_npages(pp0, 4));
+	cprintf("check_n_pages() succeeded!\n");
+}
+
+static void
+check_realloc_npages(void)
+{
+	struct Page* pp, *pp0;
+	char* addr;
+	int i;
+	pp = pp0 = 0;
+
+	// Allocate two single pages
+	pp =  page_alloc(0);
+	pp0 = page_alloc(0);
+	assert(pp != 0);
+	assert(pp0 != 0);
+	assert(pp != pp0);
+
+	// Free pp and pp0
+	page_free(pp);
+	page_free(pp0);
+
+	// Assign eight continuous pages
+	pp = page_alloc_npages(0, 8);
+	assert(check_continuous(pp, 8));
+
+	// Realloc to 4 pages
+	pp0 = page_realloc_npages(pp, 8, 4);
+	assert(pp0 == pp);
+	assert(check_continuous(pp, 4));
+
+	// Realloc to 6 pages
+	pp0 = page_realloc_npages(pp, 4, 6);
+	assert(pp0 == pp);
+	assert(check_continuous(pp, 6));
+
+	// Realloc to 12 pages
+	pp0 = page_realloc_npages(pp, 6, 12);
+	assert(check_continuous(pp0, 12));
+
+	// Free 12 continuous pages
+	assert(!page_free_npages(pp0, 12));
+
+	cprintf("check_realloc_npages() succeeded!\n");
+}
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir
 static void
