@@ -78,13 +78,14 @@ NM	:= $(GCCPREFIX)nm
 
 # Native commands
 NCC	:= gcc $(CC_VER) -pipe
+NATIVE_CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -I$(TOP) -MD -Wall
 TAR	:= gtar
 PERL	:= perl
 
 # Compiler flags
 # -fno-builtin is required to avoid refs to undefined functions in the kernel.
 # Only optimize to -O1 to discourage inlining, which complicates backtraces.
-CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -O1 -fno-builtin -I$(TOP) -MD 
+CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -O1 -fno-builtin -I$(TOP) -MD
 CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -Wall -Wno-format -Wno-unused -Werror -gstabs -m32
 
@@ -125,18 +126,22 @@ USER_CFLAGS := $(CFLAGS) -DJOS_USER -gstabs
 # Include Makefrags for subdirectories
 include boot/Makefrag
 include kern/Makefrag
+include lib/Makefrag
+include user/Makefrag
 
 
+QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -s -p $(GDBPORT)
+# QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT) -D qemu.log
 IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio $(QEMUEXTRA)
 
 .gdbinit: .gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 
-qemu: $(IMAGES)
+qemu: $(IMAGES) .gdbinit
 	$(QEMU) $(QEMUOPTS)
 
-qemu-nox: $(IMAGES)
+qemu-nox: $(IMAGES) .gdbinit
 	@echo "***"
 	@echo "*** Use Ctrl-a x to exit qemu"
 	@echo "***"
@@ -165,7 +170,7 @@ print-qemugdb:
 
 # For deleting the build
 clean:
-	rm -rf $(OBJDIR) .gdbinit jos.in
+	rm -rf $(OBJDIR) .gdbinit jos.in qemu.log
 
 realclean: clean
 	rm -rf lab$(LAB).tar.gz jos.out
@@ -173,32 +178,43 @@ realclean: clean
 distclean: realclean
 	rm -rf conf/gcc.mk
 
+ifneq ($(V),@)
+GRADEFLAGS += -v
+endif
+
 grade: $(LABSETUP)grade-lab$(LAB).sh
 	@echo $(MAKE) clean
 	@$(MAKE) clean || \
 	  (echo "'make clean' failed.  HINT: Do you have another running instance of JOS?" && exit 1)
 	$(MAKE) all
-	sh $(LABSETUP)grade-lab$(LAB).sh
+	sh $(LABSETUP)grade-lab$(LAB).sh $(GRADEFLAGS)
 
 handin: tarball
-	@echo
-	@echo "Please upload your tar file to ftp(in os's lab2 webpage)"
-	@echo
-	@echo "For example, if your student id is 123456, then replace <student id>.tar.gz to 123456.tar.gz"
+	@echo Please upload lab$(LAB)-handin.tar.gz to dmkaplony@public.sjtu.edu.cn. Thanks!
 
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
 
 # For test runs
-run-%:
+prep-%:
 	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
-	$(V)$(MAKE) "DEFS=-DTEST=_binary_obj_user_$*_start -DTESTSIZE=_binary_obj_user_$*_size" $(IMAGES)
-	echo "*** Use Ctrl-a x to exit"
+	$(V)$(MAKE) "DEFS=-DTEST=$$(case $* in *_*) echo $*;; *) echo user_$*;; esac)" $(IMAGES)
+	$(V)rm -f $(OBJDIR)/kern/init.o
+
+run-%-nox-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) -nographic $(QEMUOPTS) -S
+
+run-%-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) $(QEMUOPTS) -S
+
+run-%-nox: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
 	$(QEMU) -nographic $(QEMUOPTS)
 
-xrun-%:
-	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
-	$(V)$(MAKE) "DEFS=-DTEST=_binary_obj_user_$*_start -DTESTSIZE=_binary_obj_user_$*_size" $(IMAGES)
+run-%: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
 	$(QEMU) $(QEMUOPTS)
 
 # This magic automatically generates makefile dependencies
