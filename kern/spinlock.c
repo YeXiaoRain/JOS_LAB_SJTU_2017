@@ -18,7 +18,8 @@ struct spinlock kernel_lock = {
 
 // This is the atomic instruction that
 // reading the old value as well as doing the add operation.
-// If your gcc cannot support this function, report to TA.
+// If your gcc cannot support this function, please ask your dear friend named
+// Huang Fuqian.
 #ifdef USE_TICKET_SPIN_LOCK
 unsigned atomic_return_and_add(unsigned *addr, unsigned value)
 {
