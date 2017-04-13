@@ -29,6 +29,9 @@ static struct Command commands[] = {
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Display backtrace information(function name line parameter) ", mon_backtrace },
 	{ "time", "Report time consumed by pipeline's execution.", mon_time },
+	{ "c", "GDB-style instruction continue.", mon_c },
+	{ "si", "GDB-style instruction stepi.", mon_si },
+	{ "x", "GDB-style instruction examine.", mon_x },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -147,6 +150,50 @@ mon_time(int argc, char **argv, struct Trapframe *tf){
   unsigned long long timeend  = ((unsigned long long)eax) | (((unsigned long long)edx) << 32);
 
   cprintf("kerninfo cycles: %08d\n",timeend-timestart);
+  return 0;
+}
+
+//continue
+int
+mon_c(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    tf->tf_eflags &= ~FL_TF;
+    return -1;
+  }
+  cprintf("not support continue in non-gdb mode\n");
+  return 0;
+}
+
+//stepi
+int
+mon_si(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    tf->tf_eflags |= FL_TF;
+    struct Eipdebuginfo info;
+    debuginfo_eip((uintptr_t)tf->tf_eip, &info);
+    cprintf("tf_eip=%08x\n%s:%u %.*s+%u\n",
+        tf->tf_eip,info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, tf->tf_eip - (uint32_t)info.eip_fn_addr);
+    return -1;
+  }
+  cprintf("not support stepi in non-gdb mode\n");
+  return 0;
+}
+
+//examine
+int
+mon_x(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    if (argc != 2) {
+      cprintf("Please enter the address");
+      return 0;
+    }
+    uintptr_t examine_address = (uintptr_t)strtol(argv[1], NULL, 16);
+    uint32_t examine_value;
+    __asm __volatile("movl (%0), %0" : "=r" (examine_value) : "r" (examine_address));
+    cprintf("%d\n", examine_value);
+    return 0;
+  }
+  cprintf("not support stepi in non-gdb mode\n");
   return 0;
 }
 

@@ -74,9 +74,16 @@ TRAPHANDLER_NOEC( ENTRY_SIMDERR , T_SIMDERR)  /* 19 SIMD floating point error*/
 .type sysenter_handler, @function;
 .align 2;
 sysenter_handler:
-/*
- * Lab 3: Your code here for system call handling
- */
+  pushl %edi
+  pushl %ebx
+  pushl %ecx
+  pushl %edx
+  pushl %eax
+  call syscall
+  movl %ebp, %ecx
+  movl %esi, %edx
+  sysexit
+
 
 
 /*
