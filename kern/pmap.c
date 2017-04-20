@@ -170,8 +170,8 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
-	check_n_pages();
-	check_realloc_npages();
+	//check_n_pages();
+	//check_realloc_npages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
