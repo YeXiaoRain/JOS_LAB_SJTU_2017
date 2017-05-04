@@ -92,6 +92,8 @@ trap_init(void)
   extern void ENTRY_MCHK   ();/* 18 machine check*/
   extern void ENTRY_SIMDERR();/* 19 SIMD floating point error*/
 
+  extern void ENTRY_SYSCALL();/* 48 system call*/
+
   SETGATE(idt[T_DIVIDE ],0,GD_KT,ENTRY_DIVIDE ,0);
   SETGATE(idt[T_DEBUG  ],0,GD_KT,ENTRY_DEBUG  ,0);
   SETGATE(idt[T_NMI    ],0,GD_KT,ENTRY_NMI    ,0);
@@ -113,10 +115,7 @@ trap_init(void)
   SETGATE(idt[T_MCHK   ],0,GD_KT,ENTRY_MCHK   ,0);
   SETGATE(idt[T_SIMDERR],0,GD_KT,ENTRY_SIMDERR,0);
 
-  extern void sysenter_handler();
-  wrmsr(0x174, GD_KT, 0);           /* SYSENTER_CS_MSR */
-  wrmsr(0x175, KSTACKTOP, 0);       /* SYSENTER_ESP_MSR */
-  wrmsr(0x176, sysenter_handler, 0);/* SYSENTER_EIP_MSR */
+  SETGATE(idt[T_SYSCALL],0,GD_KT,ENTRY_SYSCALL,3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -151,17 +150,24 @@ trap_init_percpu(void)
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
+  int index = thiscpu->cpu_id;
+  thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - index * (KSTKSIZE + KSTKGAP);
+  thiscpu->cpu_ts.ts_ss0  = GD_KD;
 
-	// Initialize the TSS slot of the gdt.
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
-					sizeof(struct Taskstate), 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+  extern void sysenter_handler();
+  wrmsr(0x174, GD_KT, 0);                   /* SYSENTER_CS_MSR */
+  wrmsr(0x175, thiscpu->cpu_ts.ts_esp0 , 0);/* SYSENTER_ESP_MSR */
+  wrmsr(0x176, sysenter_handler, 0);        /* SYSENTER_EIP_MSR */
+
+  // Initialize the TSS slot of the gdt.
+  int GD_TSSi = GD_TSS0 + (index << 3);
+	gdt[GD_TSSi >> 3] = SEG16(STS_T32A, (uint32_t) (&(thiscpu->cpu_ts)),
+      sizeof(struct Taskstate), 0);
+	gdt[GD_TSSi >> 3].sd_s = 0;
 
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+	ltr(GD_TSSi);
 
 	// Load the IDT
 	lidt(&idt_pd);
@@ -231,11 +237,20 @@ trap_dispatch(struct Trapframe *tf)
       monitor(tf);
       return ;
     case T_GPFLT:
-      cprintf("trap T_DIVIDE:general protection fault\n");
+      cprintf("trap T_GPFLT:general protection fault\n");
       break ;
     case T_PGFLT:
       page_fault_handler(tf);
       break;
+    case T_SYSCALL:
+      tf->tf_regs.reg_eax = syscall(
+          tf->tf_regs.reg_eax,
+          tf->tf_regs.reg_edx,
+          tf->tf_regs.reg_ecx,
+          tf->tf_regs.reg_ebx,
+          tf->tf_regs.reg_edi,
+          tf->tf_regs.reg_esi);
+      return ;
     default:
       cprintf("trap no=%d\n",tf->tf_trapno);
       break ;
@@ -285,7 +300,7 @@ trap(struct Trapframe *tf)
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
-		// LAB 4: Your code here.
+		lock_kernel();
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie

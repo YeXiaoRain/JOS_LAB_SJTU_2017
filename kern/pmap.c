@@ -214,7 +214,7 @@ mem_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-  boot_map_region_large(kern_pgdir,KERNBASE          , -KERNBASE, 0               , PTE_W);
+  boot_map_region(kern_pgdir,KERNBASE          , -KERNBASE, 0               , PTE_W);
 
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
@@ -271,8 +271,9 @@ mem_init_mp(void)
 	//             Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	//
-	// LAB 4: Your code here:
-
+  int i;
+  for(i = 0; i < NCPU; ++i )
+    boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W);
 }
 
 // --------------------------------------------------------------
@@ -320,6 +321,11 @@ page_init(void)
   }
   // 2)
   for (; i < npages_basemem; i++) {
+    if (i == MPENTRY_PADDR / PGSIZE) {
+      pages[i].pp_ref = 1;
+      pages[i].pp_link = NULL;
+      continue;
+    }
     pages[i].pp_ref = 0;
     pages[i].pp_link = page_free_list;
     page_free_list = &pages[i];
