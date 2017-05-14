@@ -124,6 +124,7 @@ include boot/Makefrag
 include kern/Makefrag
 include lib/Makefrag
 include user/Makefrag
+include fs/Makefrag
 
 
 CPUS ?= 1
@@ -133,6 +134,8 @@ QEMUOPTS += $(shell if $(QEMU) -nographic -help | grep -q '^-D '; then echo '-D 
 
 IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS += -smp $(CPUS)
+QEMUOPTS += -hdb $(OBJDIR)/fs/fs.img
+IMAGES += $(OBJDIR)/fs/fs.img
 QEMUOPTS += $(QEMUEXTRA)
 
 
@@ -188,8 +191,7 @@ grade: $(LABSETUP)grade-lab$(LAB).sh
 	sh $(LABSETUP)grade-lab$(LAB).sh $(GRADEFLAGS)
 
 handin: tarball
-	@echo Please upload lab$(LAB)-xxx.tar.gz to the ftp as before. Thanks!
-	@echo Remeber rename the $(LAB)-handin.tar.gz with your student ID.
+	@echo Please upload lab$(LAB)-handin.tar.gz to georeth@public.sjtu.edu.cn. Thanks!
 
 tarball:
 	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
