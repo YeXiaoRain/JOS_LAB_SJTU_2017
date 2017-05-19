@@ -27,6 +27,18 @@ void evil()
 	outb(0x3f8, '\n');
 }
 
+char user_gdt[PGSIZE*2];
+struct Segdesc *gdte_ptr,gdte_backup;
+static void (*ring0_call_func)(void) = NULL;
+static void
+call_fun_wrapper()
+{
+    ring0_call_func();
+    *gdte_ptr = gdte_backup;
+    asm volatile("leave");
+    asm volatile("lret");
+}
+
 static void
 sgdt(struct Pseudodesc* gdtd)
 {
@@ -48,7 +60,24 @@ void ring0_call(void (*fun_ptr)(void)) {
     //        to add any functions or global variables in this 
     //        file if necessary.
 
-    // Lab3 : Your Code Here
+    // 1.
+    struct Pseudodesc gdtd;
+    sgdt(&gdtd);
+    // 2.
+    int r;
+    if((r = sys_map_kernel_page((void* )gdtd.pd_base, (void* )user_gdt)) < 0){
+      cprintf("ring0_call: sys_map_kernel_page failed, %e\n", r);
+      return ;
+    }
+    ring0_call_func = fun_ptr;// DONT MOVE THIS BEFORE SYS_MAP_KERNEL_PAGE
+    // 3.
+    struct Segdesc *gdt = (struct Segdesc*)((uint32_t)(PGNUM(user_gdt) << PTXSHIFT) + PGOFF(gdtd.pd_base));
+    //cprintf("(user_gdt,gdt) = (%08x,%08x)\n", (uint32_t)user_gdt,(uint32_t)gdt);
+    int GD_EVIL = GD_UD; // 0x8 * n  0x18(GD_UT) 0x20(GD_UD) 0x28(GD_TSS0)
+    gdte_backup = *(gdte_ptr = &gdt[GD_EVIL >> 3]);
+    SETCALLGATE(*((struct Gatedesc *)gdte_ptr), GD_KT, call_fun_wrapper, 3);
+    // 4. 5. 6. 7.
+    asm volatile ("lcall %0, $0" : : "i"(GD_EVIL));
 }
 
 void

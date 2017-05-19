@@ -46,11 +46,6 @@ run () {
 		echo $qemucommand 1>&2
 	fi
 
-	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
-	if $verbose; then
-		echo $qemucommand 1>&2
-	fi
-
 	t0=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout

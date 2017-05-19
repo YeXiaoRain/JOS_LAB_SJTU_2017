@@ -14,6 +14,8 @@
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
+static int
+runcmd(char *buf, struct Trapframe *tf);
 
 struct Command {
 	const char *name;
@@ -25,6 +27,11 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Display backtrace information(function name line parameter) ", mon_backtrace },
+	{ "time", "Report time consumed by pipeline's execution.", mon_time },
+	{ "c", "GDB-style instruction continue.", mon_c },
+	{ "si", "GDB-style instruction stepi.", mon_si },
+	{ "x", "GDB-style instruction examine.", mon_x },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -57,14 +64,138 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+// Lab1 only
+// read the pointer to the retaddr on the stack
+static uint32_t
+read_pretaddr() {
+    uint32_t pretaddr;
+    __asm __volatile("leal 4(%%ebp), %0" : "=r" (pretaddr)); 
+    return pretaddr;
+}
+
+void
+do_overflow(void)
+{
+    cprintf("Overflow success\n");
+}
+
+void
+start_overflow(void)
+{
+    char * pret_addr = (char *) read_pretaddr();
+    uint32_t overflow_addr = (uint32_t) do_overflow;
+    int i;
+    for (i = 0; i < 4; ++i)
+      cprintf("%*s%n\n", pret_addr[i] & 0xFF, "", pret_addr + 4 + i);
+    for (i = 0; i < 4; ++i)
+      cprintf("%*s%n\n", (overflow_addr >> (8*i)) & 0xFF, "", pret_addr + i);
+}
+
+void
+overflow_me(void)
+{
+        start_overflow();
+}
+
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+    overflow_me();
+    cprintf("Stack backtrace:\n");
+    uint32_t * ebp = (uint32_t *) read_ebp();
+    while (ebp != NULL) {
+      uint32_t eip = ebp[1];
+      cprintf("  eip %08x  ebp %08x  args %08x %08x %08x %08x %08x\n",
+          eip, (uint32_t)ebp, ebp[2], ebp[3], ebp[4], ebp[5], ebp[6]);
+
+      struct Eipdebuginfo info;
+      debuginfo_eip((uintptr_t)eip, &info);
+      cprintf("         %s:%u %.*s+%u\n",
+          info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, eip - (uint32_t)info.eip_fn_addr);
+      ebp = (uint32_t *) (*ebp);
+    }
+    cprintf("Backtrace success\n");
 	return 0;
 }
 
+// time implement
+int
+mon_time(int argc, char **argv, struct Trapframe *tf){
+  const int BUFLEN = 1024;
+  char buf[BUFLEN];
+  int bufi=0;
+  int i;
+  for(i=1;i<argc;i++){
+    char * argi =argv[i];
+    int j,ch;
+    for(j=0,ch=argi[0];ch!='\0';ch=argi[++j]){
+      buf[bufi++]=ch;
+    }
+    if(i == argc-1){
+      buf[bufi++]='\n';
+      buf[bufi++]='\0';
+      break;
+    }else{
+      buf[bufi++]=' ';
+    }
+  }
 
+  unsigned long eax, edx;
+  __asm__ volatile("rdtsc" : "=a" (eax), "=d" (edx));
+  unsigned long long timestart  = ((unsigned long long)eax) | (((unsigned long long)edx) << 32);
+
+  runcmd(buf, NULL);
+
+  __asm__ volatile("rdtsc" : "=a" (eax), "=d" (edx));
+  unsigned long long timeend  = ((unsigned long long)eax) | (((unsigned long long)edx) << 32);
+
+  cprintf("kerninfo cycles: %08d\n",timeend-timestart);
+  return 0;
+}
+
+//continue
+int
+mon_c(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    tf->tf_eflags &= ~FL_TF;
+    return -1;
+  }
+  cprintf("not support continue in non-gdb mode\n");
+  return 0;
+}
+
+//stepi
+int
+mon_si(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    tf->tf_eflags |= FL_TF;
+    struct Eipdebuginfo info;
+    debuginfo_eip((uintptr_t)tf->tf_eip, &info);
+    cprintf("tf_eip=%08x\n%s:%u %.*s+%u\n",
+        tf->tf_eip,info.eip_file, info.eip_line, info.eip_fn_namelen, info.eip_fn_name, tf->tf_eip - (uint32_t)info.eip_fn_addr);
+    return -1;
+  }
+  cprintf("not support stepi in non-gdb mode\n");
+  return 0;
+}
+
+//examine
+int
+mon_x(int argc, char **argv, struct Trapframe *tf){
+  if(tf){//GDB-mode
+    if (argc != 2) {
+      cprintf("Please enter the address");
+      return 0;
+    }
+    uintptr_t examine_address = (uintptr_t)strtol(argv[1], NULL, 16);
+    uint32_t examine_value;
+    __asm __volatile("movl (%0), %0" : "=r" (examine_value) : "r" (examine_address));
+    cprintf("%d\n", examine_value);
+    return 0;
+  }
+  cprintf("not support stepi in non-gdb mode\n");
+  return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
