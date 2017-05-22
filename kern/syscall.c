@@ -333,7 +333,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
     struct Page *pg;
     if(!(pg = page_lookup(curenv->env_pgdir, srcva, &pte)))
       return -E_INVAL;
-    if((*pte & perm) != perm)
+    if((perm & PTE_W) && !(*pte & PTE_W))
       return -E_INVAL;
     if(e->env_ipc_dstva < (void *)UTOP){
       if((r = page_insert(e->env_pgdir, pg, e->env_ipc_dstva, perm)) < 0)
