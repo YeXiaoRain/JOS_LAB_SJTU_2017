@@ -195,7 +195,7 @@ def test_echosrv():
 
     save_pcap_on_fail()
     r.user_test("echosrv", call_on_line("bound", ready))
-    r.match("bound", no=[".*panic"])
+    r.match("bound")
 
 @test(0, "web server [httpd]")
 def test_httpd():
@@ -221,8 +221,7 @@ def mk_test_httpd(url, expect_code, expect_data):
         save_pcap_on_fail()
         r.user_test("httpd",
                     call_on_line('Waiting for http connections', ready))
-        r.match('Waiting for http connections',
-                no=[".*panic"])
+        r.match('Waiting for http connections')
     test_httpd_test.func_name += url.replace("/", "-")
     return test(10, fullurl, parent=test_httpd)(test_httpd_test)
 mk_test_httpd("/", 404, "")
