@@ -219,7 +219,8 @@ grade:
 	./grade-lab$(LAB) $(GRADEFLAGS)
 
 handin: tarball
-	@echo Please upload lab$(LAB)-handin.tar.gz to Dd_nirvana@public.sjtu.edu.cn. Thanks!
+	@echo Please rename lab$(LAB)-handin.tar.gz to lab6_yourID_yourName.tar.gz
+	@echo Upload lab6_yourID_yourName.tar.gz to Dd_nirvana@public.sjtu.edu.cn. Thanks!
 
 tarball:
 	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
