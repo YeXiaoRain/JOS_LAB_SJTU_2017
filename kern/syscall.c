@@ -386,9 +386,20 @@ sys_sbrk(uint32_t inc)
 // Errors are:
 //   -E_INVAL
 //   -E_TX_FULL
-static int sys_net_try_send(char *data, int len) {
+static int
+sys_net_try_send(char *data, int len) {
   user_mem_assert(curenv, data, len, PTE_U);   // check permission
   return e1000_transmit(data, len);
+}
+
+// Returns length on success, < 0 on error.
+// Errors are:
+//   -E_INVAL
+//   -E_RX_EMPTY
+static int
+sys_net_receive(char *buf) {
+  user_mem_assert(curenv, ROUNDDOWN(buf, PGSIZE), PGSIZE, PTE_U | PTE_W);   // check permission
+  return e1000_receive(buf);
 }
 
 int32_t
@@ -459,6 +470,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
       return sys_time_msec();
     case SYS_net_try_send:
       return sys_net_try_send((char *) a1, (int) a2);
+    case SYS_net_receive:
+      return sys_net_receive((char *) a1);
     case NSYSCALLS:
     default:
       return -E_INVAL;
