@@ -23,6 +23,9 @@ enum {
 
 	SYS_sbrk,
 	SYS_time_msec,
+
+  SYS_net_try_send,
+
 	NSYSCALLS
 };
 
